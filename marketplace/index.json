@@ -1,0 +1,48 @@
+{
+  "format": 1,
+  "title": "dsh-secret-vault",
+  "description": "Privacy-first DSH plugins: hand secrets over without leaking them",
+  "plugins": [
+    {
+      "name": "dsh-secret-vault",
+      "title": "Secret Vault — use secrets without reading them",
+      "description": "Paste keys or PII locally; the model gets handles, a value-free field digest and a content kind. Guarded tool boundary, host rescue CLI, 57 tests.",
+      "author": "yuloop",
+      "repository": {
+        "url": "https://github.com/yuloop/dsh-secret-vault"
+      },
+      "homepage": "https://github.com/yuloop/dsh-secret-vault#readme",
+      "license": "MIT",
+      "keywords": [
+        "secret",
+        "privacy",
+        "pii",
+        "local-first",
+        "redaction",
+        "classification"
+      ],
+      "categories": [
+        "security"
+      ],
+      "labels": [
+        "local-only",
+        "masked-input"
+      ],
+      "icon": "https://raw.githubusercontent.com/yuloop/dsh-secret-vault/main/icon.svg",
+      "versions": [
+        {
+          "version": "4.4.0",
+          "publishTimestamp": 1792975320,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/yuloop/dsh-secret-vault",
+            "commit": "7951cc1aa0bf0c7ef29b4ab2db1b754e90f0cc0b"
+          },
+          "engines": {
+            "dsh": ">=0.2.0"
+          }
+        }
+      ]
+    }
+  ]
+}
