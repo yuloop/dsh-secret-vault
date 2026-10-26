@@ -1,12 +1,12 @@
 {
   "format": 1,
   "title": "dsh-secret-vault",
-  "description": "Privacy-first DSH plugins: hand secrets over without leaking them",
+  "description": "把密钥、PII 交给自己机器的 DSH 插件：模型只拿句柄和不含值的摘要",
   "plugins": [
     {
       "name": "dsh-secret-vault",
-      "title": "Secret Vault — use secrets without reading them",
-      "description": "Paste keys or PII locally; the model gets handles, a value-free field digest and a content kind. Guarded tool boundary, host rescue CLI, 57 tests.",
+      "title": "Secret Vault — 用密钥，但不让它进上下文",
+      "description": "把密钥或个人信息粘进本地面板；模型只拿到句柄、不含值的字段摘要和内容类型。守卫拦截点名存储路径的调用，带宿主机救援命令，57 个测试。",
       "author": "yuloop",
       "repository": {
         "url": "https://github.com/yuloop/dsh-secret-vault"
@@ -14,6 +14,12 @@
       "homepage": "https://github.com/yuloop/dsh-secret-vault#readme",
       "license": "MIT",
       "keywords": [
+        "密钥",
+        "私密",
+        "个人信息",
+        "本地",
+        "脱敏",
+        "分类",
         "secret",
         "privacy",
         "pii",
