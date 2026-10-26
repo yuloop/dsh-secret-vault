@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Private local processing",
+    "description": "Temporary plaintext stays on the host. Fixed local operations return only status and random paths to the model. Private sessions deny ordinary tools, with daily cleanup. Not an OS isolation boundary against other root processes or plugins."
+  }
+}

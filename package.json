@@ -1,0 +1,74 @@
+{
+  "name": "dsh-secret-vault",
+  "version": "4.4.0",
+  "scripts": {
+    "test": "node --test tests/local-*.test.mjs",
+    "test:unit": "node --test tests/local-*.test.mjs"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "bin/secret-vault.mjs",
+    "store.js",
+    "field-shape.js",
+    "tfidf.js",
+    "classify.js",
+    "pii-recognizers.js",
+    "local-files.js",
+    "local-operations.js",
+    "daily-cleanup.js",
+    "guard.js",
+    "tools.js",
+    "routes.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "model/tfidf-model.json"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "bin": {
+    "secret-vault": "./bin/secret-vault.mjs"
+  },
+  "description": "Paste secrets and PII locally: the model gets handles, field digests and a content kind — never the values.",
+  "license": "MIT",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "secret",
+    "privacy",
+    "pii",
+    "local-first",
+    "redaction"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yuloop/dsh-secret-vault"
+  },
+  "homepage": "https://github.com/yuloop/dsh-secret-vault#readme",
+  "bugs": {
+    "url": "https://github.com/yuloop/dsh-secret-vault/issues"
+  }
+}
