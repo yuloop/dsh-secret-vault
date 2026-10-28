@@ -38,11 +38,11 @@
       "versions": [
         {
           "version": "4.5.0",
-          "publishTimestamp": 1793157715,
+          "publishTimestamp": 1793158097,
           "source": {
             "type": "git",
             "url": "https://github.com/yuloop/dsh-secret-vault",
-            "commit": "PENDING"
+            "commit": "090ab2c"
           },
           "engines": {
             "dsh": ">=0.2.0"
