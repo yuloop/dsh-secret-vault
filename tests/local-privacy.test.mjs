@@ -284,3 +284,23 @@ test('entries saved before auto-decomposition get their shape backfilled', async
   assert.equal((await readFile(statePath, 'utf8')).includes(key), false)
   assert.equal(entry.shape.secrets.length, 1)
 })
+
+test('guard: object elements and nested arrays are traversed, never skipped', async t => {
+  const { store } = await fixture(t)
+  await store.save('owner', randomText())
+  const guard = createGuard(store)
+  // Regression (2026-10-28): the `else` used to bind to the inner `if (typeof element === 'string')`,
+  // so an array under a touch key never descended into its object elements, and an array under any
+  // other key was skipped entirely. Three of the five shapes below slipped through before the fix.
+  for (const args of [
+    { paths: [{ file: `${store.dir}/x.txt` }] },
+    { path: [{ p: `${store.dir}/x.txt` }] },
+    { a: { b: { paths: [{ file: `${store.dir}/x.txt` }] } } },
+    { items: [[{ deep: `${store.dir}/x.txt` }]] },
+    { paths: [`${store.dir}/x.txt`] },
+  ]) assert.equal(typeof guard({ name: 'bash', arguments: args, ...exec('owner') }), 'string', JSON.stringify(args))
+  // Descending must not become over-blocking: object arguments with no vault path stay allowed.
+  for (const args of [{ paths: [{ file: '/var/tmp/ok.txt' }] }, { files: ['a.txt', 'b.txt'] }, { text: 'hi' }]) {
+    assert.equal(guard({ name: 'bash', arguments: args, ...exec('owner') }), undefined, JSON.stringify(args))
+  }
+})

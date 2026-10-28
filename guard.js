@@ -51,8 +51,15 @@ function touchValues(value, depth = 0, out = []) {
     if (typeof item === 'string') {
       if (TOUCH_KEYS.has(key) || (key !== 'content' && key !== 'text' && isAbsolute(item))) out.push(item)
     } else if (Array.isArray(item)) {
-      if (TOUCH_KEYS.has(key)) for (const element of item) if (typeof element === 'string') out.push(element)
-      else touchValues(item, depth + 1, out)
+      // Arrays always get descended: object elements must be inspected even under a touch key,
+      // and arrays under a non-touch key can still hold an absolute path (fail closed).
+      for (const element of item) {
+        if (typeof element === 'string') {
+          if (TOUCH_KEYS.has(key) || isAbsolute(element)) out.push(element)
+        } else {
+          touchValues(element, depth + 1, out)
+        }
+      }
     } else if (item && typeof item === 'object') touchValues(item, depth + 1, out)
   }
   return out
