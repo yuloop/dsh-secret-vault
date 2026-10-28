@@ -2,6 +2,16 @@
 
 # Changelog
 
+## 4.5.1
+
+- **Fixes a guard bypass**: an argument shaped like `{paths:[{file:"<vault>/x.txt"}]}` — an array of
+  objects — was not refused. The `else` branch bound to the inner `if (typeof element === 'string')`,
+  so an array under a touch key never descended into its object elements, and an array under any other
+  key was skipped entirely. 3 of 5 shapes read private bytes unnoticed. Arrays are now always
+  descended; string elements are still collected only under a touch key or when they are absolute
+  paths (fail closed). Affects 4.5.0 only — 4.4.x refused everything and did not have this hole.
+  A regression test is included.
+
 ## 4.5.0
 
 All three fixes come from one real session (the plugin blocked a working session twice in a morning):
