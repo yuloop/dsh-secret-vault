@@ -37,6 +37,18 @@
       "icon": "https://raw.githubusercontent.com/yuloop/dsh-secret-vault/main/icon.svg",
       "versions": [
         {
+          "version": "4.4.1",
+          "publishTimestamp": 1793155563,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/yuloop/dsh-secret-vault",
+            "commit": "a98d253"
+          },
+          "engines": {
+            "dsh": ">=0.2.0"
+          }
+        },
+        {
           "version": "4.4.0",
           "publishTimestamp": 1792975320,
           "source": {
