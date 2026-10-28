@@ -54,7 +54,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/yuloop/dsh-secret-vault",
-            "commit": "090ab2c"
+            "commit": "090ab2c1404a474a3e74fd5614bbfee45c50ab7d"
           },
           "engines": {
             "dsh": ">=0.2.0"
@@ -66,7 +66,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/yuloop/dsh-secret-vault",
-            "commit": "a98d253"
+            "commit": "a98d253f987d7b7e52b83f61008cce544a5b1cb6"
           },
           "engines": {
             "dsh": ">=0.2.0"
