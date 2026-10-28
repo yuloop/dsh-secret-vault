@@ -108,7 +108,7 @@ Not guaranteed:
 ## Development
 
 ```bash
-npm test                          # 57 tests: parsing, PII checks, classification, routes, runtime
+npm test                          # 58 tests: parsing, PII checks, classification, routes, runtime
 node tools/train-tfidf.mjs        # retrain the 144 KB linear classifier (synthetic corpus)
 node tools/eval-classify.mjs      # gates: high-cost mistakes 0 · abstain ≤25% · P99<100ms · macro-F1≥0.85
 ```

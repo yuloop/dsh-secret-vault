@@ -2,6 +2,17 @@
 
 # Changelog
 
+## 4.4.1
+
+- Fix five PII false positives: Latin label words (`code` / `name`) had no word boundary, so
+  `postcode` / `decode` / `username` / `hostname` made nearby digits look like an OTP and the
+  suffix look like a name label.
+- Address and ID/account values now stop at the clause boundary and before the next label
+  instead of swallowing the following phone number or account.
+- OTP same-clause detection now also splits on Chinese and ASCII commas and enumeration commas:
+  `验证码：123456，您正在支付 5000 元` no longer reports the amount as a second OTP.
+- A regression test covers each of the five cases.
+
 ## 4.4.0
 
 - Content classification (`provider-config` / `server-login` / `db-credential` / `bank-sms` /

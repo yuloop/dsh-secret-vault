@@ -98,7 +98,7 @@ secret-vault purge <session> --yes   # 删除该会话的文件（不可恢复�
 ## 开发
 
 ```bash
-npm test                          # 57 个测试：解析、PII 校验、分类、路由、运行时
+npm test                          # 58 个测试：解析、PII 校验、分类、路由、运行时
 node tools/train-tfidf.mjs        # 重训 144 KB 线性分类器（合成语料）
 node tools/eval-classify.mjs      # 门禁：高危错判 0 · 拒判 ≤25% · P99<100ms · macro-F1≥0.85
 ```

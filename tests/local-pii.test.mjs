@@ -58,6 +58,8 @@ function positives() {
     { name: '邮箱', text: '邮箱: someone@example.com', values: ['someone@example.com'], type: '邮箱' },
     { name: '姓名', text: '姓名：张三', values: ['张三'], type: '姓名' },
     { name: '地址', text: '收货地址：北京市海淀区中关村大街1号', values: ['北京市海淀区中关村大街1号'], type: '地址' },
+    // 地址后紧跟另一个标签时，取值必须在下个标签前收手，不能把「手机：…」并进地址
+    { name: '地址后跟手机号', text: '地址：北京市海淀区中关村大街1号 手机：13800138000', values: ['北京市海淀区中关村大街1号'], type: '地址' },
     { name: '护照', text: '护照：E12345678', values: ['E12345678'], type: '证件/账号类' },
   ]
 }
@@ -77,6 +79,11 @@ function negatives() {
     { name: '金额', text: '合计 12345 元' },
     { name: '无关键词的6位数字', text: '端口 808080 已占用' },
     { name: '手机号附近无关键词的短数字', text: '编号 1234 备注数量 5678' },
+    // 拉丁关键词必须带词边界，否则 postcode/decode/hostname 里的 code、name 会被当成标签
+    { name: 'postcode 里的 code', text: 'postcode: 100080' },
+    { name: 'decode 里的 code', text: 'decode 4096 bytes' },
+    { name: 'username 里的 name', text: 'username: 张三' },
+    { name: 'hostname 里的 name', text: 'hostname: server01' },
   ]
 }
 
@@ -106,6 +113,12 @@ test('no PII value is ever returned, only type/length/fingerprint/evidence', () 
     for (const value of sample.values) if (blob.includes(value)) leaked.push(sample.name)
   }
   assert.deepEqual(leaked, [])
+})
+
+test('同一句里只报验证码，金额不能被连带报成验证码', () => {
+  // 逗号/顿号也是子句边界：银行短信全靠它们分句。
+  const found = recognizePii('验证码：123456，您正在支付 5000 元')
+  assert.deepEqual(found.map(item => `${item.type}/${item.length}`), ['验证码/6'])
 })
 
 test('validators', () => {

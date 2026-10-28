@@ -6,7 +6,7 @@
     {
       "name": "dsh-secret-vault",
       "title": "Secret Vault — 用密钥，但不让它进上下文",
-      "description": "把密钥或个人信息粘进本地面板；模型只拿到句柄、不含值的字段摘要和内容类型。守卫拦截点名存储路径的调用，带宿主机救援命令，57 个测试。",
+      "description": "把密钥或个人信息粘进本地面板；模型只拿到句柄、不含值的字段摘要和内容类型。守卫拦截点名存储路径的调用，带宿主机救援命令，58 个测试。",
       "author": "yuloop",
       "repository": {
         "url": "https://github.com/yuloop/dsh-secret-vault"

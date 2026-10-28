@@ -53,10 +53,17 @@ export function mobileValid(value) {
   return MOBILE_PREFIX.test(digits)
 }
 
-const OTP_HINT = /(?:验证码|校验码|动态码|短信码|一次性密码|verification\s*code|one[\s-]?time\s*(?:code|password)|otp|2fa|code)/i
-const NAME_LABEL = /(?:姓名|名字|收件人|联系人|开户人|持卡人|name)\s*[:：=]\s*([\u4e00-\u9fa5]{2,4}|[A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,3})/g
-const ADDRESS_LABEL = /(?:地址|住址|收货地址|address)\s*[:：=]\s*(.{4,80})/g
-const OTHER_LABEL = /(?:护照|通行证|车牌|社保|医保|工号|学号|卡号|账号|账户|邮箱|email|e-mail)\s*[:：=]\s*([^\s,，;；]{3,40})/gi
+// 拉丁关键词必须带词边界：否则 postcode / unicode / decode / barcode 里的 "code" 也会命中，
+// 把同句任意 4-8 位数字误判成验证码（配置粘贴、日志里这类词极常见）。
+const OTP_HINT = /(?<![A-Za-z])(?:验证码|校验码|动态码|短信码|一次性密码|verification\s*code|one[\s-]?time\s*(?:code|password)|otp|2fa|code)(?![A-Za-z])/i
+// "name" 同样要锚定：username / filename / hostname 的尾部不能算姓名标签。
+const NAME_LABEL = /(?:姓名|名字|收件人|联系人|开户人|持卡人|(?<![A-Za-z])name(?![A-Za-z]))\s*[:：=]\s*([\u4e00-\u9fa5]{2,4}|[A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,3})/g
+// 取值只到子句边界（逗号/句号/分号/换行），且在下一个人名标签前收手：
+// "收货地址：北京市海淀区中关村大街1号 收件人：张三" 不能再把「收件人：张三」并进地址。
+const ADDRESS_LABEL = /(?:地址|住址|收货地址|address)\s*[:：=]\s*([^\n。；;，,]{4,80}?)(?=\s*(?:[。；;，,\n]|(?:收件人|联系人|姓名|手机|电话|邮箱|账号|卡号|证件|护照|车牌)\s*[:：=])|$)/g
+// 值里不能再含冒号：否则前面 recognizer 抹掉的空档会被 `\s*` 跨过，
+// "卡号：<已抹掉> 账号：abc123" 会把下一个字段的值当成卡号的值报上来。
+const OTHER_LABEL = /(?:护照|通行证|车牌|社保|医保|工号|学号|卡号|账号|账户|邮箱|email|e-mail)\s*[:：=]\s*([^\s,，;；:：]{3,40})/gi
 
 const hits = (text, re, build) => {
   const out = []
@@ -93,12 +100,14 @@ export function recognizePii(text) {
   }
   for (const m of hits(work, /(?<!\d)(\d{4,8})(?!\d)/g, m => ({ value: m[1] }))) {
     // Same clause only: "转出 5000 元。验证码：483920" must report 483920, not 5000.
-    const before = (raw.slice(Math.max(0, m.start - 40), m.start).split(/[。；;\n]/).pop() ?? '')
-    const after = (raw.slice(m.end, Math.min(raw.length, m.end + 16)).split(/[。；;\n]/)[0] ?? '')
+    // 逗号（中英文）和顿号也是子句分隔符：银行/支付短信全靠它们分句，
+    // 少了就会把「验证码：123456，您正在支付 5000 元」里的 5000 当成验证码。
+    const before = (raw.slice(Math.max(0, m.start - 40), m.start).split(/[。；;，,\n、]/).pop() ?? '')
+    const after = (raw.slice(m.end, Math.min(raw.length, m.end + 16)).split(/[。；;，,\n、]/)[0] ?? '')
     if (!OTP_HINT.test(before) && !OTP_HINT.test(after)) continue
     add('验证码', m.value, '同句邻近验证码类关键词', m.start, m.end); consume(m.start, m.end)
   }
-  // A domain needs a letter-based TLD; "root@198.51.100.9" is a host, not an address.
+  // A domain needs a letter-based TLD; "root@10.0.0.9" is a host, not an address.
   for (const m of hits(work, /[\w.+-]+@(?:[\w-]+\.)+[A-Za-z]{2,}/g, m => ({ value: m[0] }))) {
     add('邮箱', m.value, '邮箱格式', m.start, m.end); consume(m.start, m.end)
   }
