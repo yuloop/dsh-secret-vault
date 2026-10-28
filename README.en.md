@@ -4,7 +4,8 @@
 
 Paste secrets, API keys, or PII into the DSH web UI and let the agent **act on them without ever
 reading them**. The plugin stores the body in a local file, hands the model an opaque handle plus a
-value-free digest, and refuses any tool call that names the private directory.
+value-free digest, and refuses tool calls whose **path or command arguments** address the private
+directory — every other tool keeps working.
 
 ```text
 you paste ──► local file (0600, random name)          ← body lives here, never in chat/logs
@@ -72,10 +73,22 @@ Settings → Plugins → Marketplace → add that URL.
 
 | tool | returns |
 |---|---|
-| `private_local_status` | handle, used flag, `shape` (kind/sensitivity/evidence/advice/counts), no values |
+| `private_local_status` | `mode` (`local_only`/`normal`), what is restricted, what still works, how it ends, handles and `shape` (kind/sensitivity/evidence/advice/counts), no values |
 | `private_local_process` | runs one of six fixed text transforms (`copy`, `trim_edges`, `normalize_newlines`, `json_pretty`, `json_compact`, `dedupe_lines`) and returns status + a new handle |
+| `private_local_process` + `operation:"write_secret"` | **writes the value into a key of a target config file** (`.env`/`.ini`/`.properties`/`.yml`/`.toml`/`.json`/`.php`/`.js`/`.ts`) and returns `{ok, status, target, keyPath, changed, fingerprint}` — the value never appears in the result |
 
 No delete tool, no shell, no HTTP: the model cannot reach the bytes, only act around them.
+
+`write_secret` is the "rotate an API key" case, which is what the vault is mostly for:
+
+```json
+{"reference": "tmp-<32hex>", "operation": "write_secret",
+ "target": "/root/project/config/secrets.local.php", "key_path": "AI_API_KEY", "mode": "first-secret"}
+```
+
+`mode: "whole"` (default) takes the whole file trimmed; `first-secret` takes the first detected secret
+(the tightest span, so trailing prose is not pasted into the target). A missing target is seeded in its
+own format; an existing one keeps every other byte and its permission bits.
 
 ## Host commands
 
@@ -108,7 +121,7 @@ Not guaranteed:
 ## Development
 
 ```bash
-npm test                          # 58 tests: parsing, PII checks, classification, routes, runtime
+npm test                          # 102 tests: parsing, PII checks, classification, routes, runtime, redaction, write_secret
 node tools/train-tfidf.mjs        # retrain the 144 KB linear classifier (synthetic corpus)
 node tools/eval-classify.mjs      # gates: high-cost mistakes 0 · abstain ≤25% · P99<100ms · macro-F1≥0.85
 ```

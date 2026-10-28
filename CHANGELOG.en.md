@@ -2,6 +2,34 @@
 
 # Changelog
 
+## 4.5.0
+
+All three fixes come from one real session (the plugin blocked a working session twice in a morning):
+
+- **Narrower guard.** Any argument containing the vault directory string used to refuse the whole
+  call — including `compress` summaries, a report sent to another agent, and a script that only
+  named the directory as a variable. Now only calls whose *path or command arguments* address the
+  vault are refused (`file_path` / `command` / `cwd` / `paths` …, or a value that is itself an
+  absolute path). `date`, `ls /var/tmp`, `php -l` and friends keep working.
+- **A worse bug fixed on the way.** When a caller had no session id (`exec.agent` missing), the old
+  `!owner && store.hasFiles()` branch denied *every* tool — one agent runtime that could not report
+  its session id took the whole machine's tooling down. It now refuses only vault-touching calls.
+- **New `write_secret` primitive** (the important one): `private_local_process({operation:
+  "write_secret", reference, target, key_path, mode})` writes the vault value straight into the
+  named key of a target config file. Supports `.env` / `.ini` / `.properties` / `.yml` / `.toml` /
+  `.json` (dotted path) / `.php` / `.js` / `.ts` (`define('K', …)` or `'K' => …`), and seeds a
+  missing file in the target's own format. It returns only `{ok, status, target, keyPath, changed,
+  fingerprint (8 chars)}` — **the value is never returned**. Only the matched value bytes change;
+  the file's mode is preserved.
+- **`private_local_status` answers in one call**: `mode: local_only | normal`, `restricts` (what is
+  limited now), `openTools` (what still works), `releaseWhen` (how it ends).
+- **Exit redaction.** Every tool result is scrubbed before it reaches the transcript: `sk-` /
+  `AKIA` / `ghp_` / JWT / `Bearer` and other high-entropy credential shapes become
+  "first 4 chars + fingerprint". This is aimed at the agent's own `sed`/`grep` slip-up (the real
+  incident: a `sed` that failed to mask a DashScope key printed it into the session log). Token-wise
+  linear scan, ~114 ms for 1 MB; paths, git SHAs, UUIDs and `tmp-` handles are left alone.
+- Guard refusals now name the way forward (`write_secret`) instead of only saying "paused".
+
 ## 4.4.1
 
 - Fix five PII false positives: Latin label words (`code` / `name`) had no word boundary, so

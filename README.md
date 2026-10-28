@@ -4,7 +4,7 @@
 
 把密钥、API key、身份证、手机号这类东西粘进 DSH 网页的私密面板，**让 agent 拿着它干活，却读不到它**。
 插件把正文落在本机一个随机名文件里，只交给模型一个不透明句柄和一份不含值的摘要；
-任何点名私密目录的工具调用一律拒绝。
+**参数里用路径或命令指向私密目录的调用**一律拒绝，其余工具照常可用。
 
 ```text
 你粘贴 ──► 本机文件（0600，随机名）            ← 正文只存在这里，不进聊天/日志
@@ -30,7 +30,12 @@
   外加 `sensitivity`、`confidence`、可审计的 `evidence` 和一行 `advice`。
 - **先掩码再分类**：分类器只看到 `[[SECRET]]` / `[[PII]]` / `[[URL]]` 占位符
   （定长——带长度的占位符本身就是侧信道）。
-- **守卫**：任何参数里点名私密目录的工具调用都被拒，`read`、`cat`、glob 都不可能把字节带进上下文。
+- **守卫（4.5.0 收窄）**：只拒「参数是路径/命令且指向私密目录」的调用（`file_path`、`command`、
+  `cwd`、`paths`…），`read`/`cat`/glob 拿不到字节；`date`、`ls /var/tmp`、`php -l` 这类无关命令
+  以及在消息/摘要里**提到**目录都照常。理由：旧规则把「写报告给别的 agent」「压缩摘要里提路径」
+  一起拦了，等于让会话没法反映问题，却挡不住真要绕的人。
+- **出口打码（4.5.0）**：任何工具的返回进上下文前，`sk-`/`AKIA`/`ghp_`/JWT/`Bearer` 等高熵凭据
+  样式自动替换成「前 4 字符 + 指纹」。防的是 agent 自己 `sed`/`grep` 手滑。
 - **宿主机救援命令**：`secret-vault status | fields | release | purge | cleanup`；不需要浏览器，永不打印值。
 - **fail-closed 收窄**：存储坏掉时只拒「会碰到存储的调用」，不再冻结所有会话的工具。
 
@@ -63,10 +68,22 @@ https://raw.githubusercontent.com/yuloop/dsh-secret-vault/main/marketplace/index
 
 | 工具 | 返回 |
 |---|---|
-| `private_local_status` | 句柄、已用标记、`shape`（类型/敏感级/依据/建议/计数），不含任何值 |
-| `private_local_process` | 执行六种固定文本变换之一（`copy`、`trim_edges`、`normalize_newlines`、`json_pretty`、`json_compact`、`dedupe_lines`），返回状态和一个新句柄 |
+| `private_local_status` | `mode`（`local_only`/`normal`）、限制了什么、什么还能用、怎么解除、句柄与 `shape`（类型/敏感级/依据/建议/计数），不含任何值 |
+| `private_local_process` | 六种固定文本变换（`copy`、`trim_edges`、`normalize_newlines`、`json_pretty`、`json_compact`、`dedupe_lines`），返回状态和新句柄 |
+| `private_local_process` + `operation:"write_secret"` | **把值写进目标配置文件的指定键**（`.env`/`.ini`/`.properties`/`.yml`/`.toml`/`.json`/`.php`/`.js`/`.ts`），返回 `{ok, status, target, keyPath, changed, fingerprint}` —— 值不出现在返回里 |
 
 没有删除工具、没有 shell、没有 HTTP：模型够不到字节，只能在它周围干活。
+
+`write_secret` 就是「换 API key」这个最典型的用法：
+
+```json
+{"reference": "tmp-<32hex>", "operation": "write_secret",
+ "target": "/root/project/config/secrets.local.php", "key_path": "AI_API_KEY", "mode": "first-secret"}
+```
+
+`mode: "whole"`（默认）取整个文件去首尾空白；`first-secret` 取文件里识别到的第一个密钥
+（取最紧的跨度，不会把后面的散文一起写进目标文件）。目标文件不存在时按它自己的格式生成初始内容；
+已存在时只改匹配到的那一处值，其余字节与权限位原样保留。
 
 ## 宿主机命令
 
@@ -98,7 +115,7 @@ secret-vault purge <session> --yes   # 删除该会话的文件（不可恢复�
 ## 开发
 
 ```bash
-npm test                          # 58 个测试：解析、PII 校验、分类、路由、运行时
+npm test                          # 102 个测试：解析、PII 校验、分类、路由、运行时、打码、write_secret
 node tools/train-tfidf.mjs        # 重训 144 KB 线性分类器（合成语料）
 node tools/eval-classify.mjs      # 门禁：高危错判 0 · 拒判 ≤25% · P99<100ms · macro-F1≥0.85
 ```

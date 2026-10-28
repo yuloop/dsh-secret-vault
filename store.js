@@ -1,11 +1,13 @@
 /** Plaintext local files. Only fixed transformations can consume their bytes. */
-import { join, resolve } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import { homedir } from 'node:os'
 import { unlink } from 'node:fs/promises'
-import { ID, OWNER, MAX_BYTES, MAX_STATE_BYTES, boundedRead, privateDirectory,
-  exclusiveWrite, atomicState, newId, fail } from './local-files.js'
+import { createHash } from 'node:crypto'
+import { ID, OWNER, MAX_BYTES, MAX_STATE_BYTES, MAX_TARGET_BYTES, boundedRead, privateDirectory,
+  exclusiveWrite, atomicState, atomicReplace, newId, fail } from './local-files.js'
 import { OPERATIONS, transformLocally } from './local-operations.js'
 import { shapeLine } from './field-shape.js'
+import { selectSecret, applySecret, seedText } from './secret-write.js'
 import { analyze } from './classify.js'
 
 export const MAX_AGE_MS = 24 * 60 * 60 * 1000
@@ -98,8 +100,33 @@ class LocalStore {
       return { ok: true, status: 'processed', result: this.#view(output) }
     })
   }
-  markUsed(owner, reference) {
+  /**
+   * v4.5.0: the operation the vault exists for — put one secret into a target config file.
+   * The value goes vault -> target and never through the model: the return carries the key
+   * path, the changed flag and a fingerprint prefix, never the bytes.
+   */
+  writeSecret(owner, { reference, target, keyPath, mode }) {
     return this.#serial(async () => {
+      const source = this.#lookup(owner, reference)
+      const raw = await boundedRead(this.#path(source.id))
+      const secret = selectSecret(raw, mode ?? 'whole')
+      if (typeof target !== 'string' || !isAbsolute(target) || target.startsWith(this.dir + '/')) fail()
+      let current = null
+      try { current = await boundedRead(target, MAX_TARGET_BYTES) } catch (error) { if (error.code !== 'ENOENT') fail() }
+      const outcome = current === null
+        ? { text: seedText({ target, keyPath, secret }), changed: true }
+        : applySecret({ text: current, target, keyPath, secret })
+      if (outcome.changed) await atomicReplace(target, outcome.text)
+      source.used = this.#clock()
+      await this.#persist()
+      return {
+        ok: true, status: outcome.changed ? 'written' : 'unchanged',
+        target, keyPath, mode: mode ?? 'whole',
+        fingerprint: createHash('sha256').update(secret).digest('hex').slice(0, 8),
+      }
+    })
+  }
+  markUsed(owner, reference) {    return this.#serial(async () => {
       this.#lookup(owner, reference).used = this.#clock()
       await this.#persist()
       return { ok: true }

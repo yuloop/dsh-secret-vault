@@ -6,7 +6,7 @@
     {
       "name": "dsh-secret-vault",
       "title": "Secret Vault — 用密钥，但不让它进上下文",
-      "description": "把密钥或个人信息粘进本地面板；模型只拿到句柄、不含值的字段摘要和内容类型。守卫拦截点名存储路径的调用，带宿主机救援命令，58 个测试。",
+      "description": "把密钥或个人信息粘进本地面板；模型只拿到句柄、不含值的字段摘要和内容类型。4.5.0 起守卫只拦「路径/命令指向私密目录」的调用（其余工具照常），新增 write_secret 把值直接写进目标配置文件的指定键（值不返回），任何工具输出里的凭据样式自动打码。102 个测试。",
       "author": "yuloop",
       "repository": {
         "url": "https://github.com/yuloop/dsh-secret-vault"
@@ -36,6 +36,18 @@
       ],
       "icon": "https://raw.githubusercontent.com/yuloop/dsh-secret-vault/main/icon.svg",
       "versions": [
+        {
+          "version": "4.5.0",
+          "publishTimestamp": 1793157715,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/yuloop/dsh-secret-vault",
+            "commit": "PENDING"
+          },
+          "engines": {
+            "dsh": ">=0.2.0"
+          }
+        },
         {
           "version": "4.4.1",
           "publishTimestamp": 1793155563,

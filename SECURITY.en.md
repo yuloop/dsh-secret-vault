@@ -2,30 +2,32 @@
 
 # Security policy
 
-## Report a vulnerability
+## Reporting a vulnerability
 
-走 GitHub 私密安全公告（`Security` → `Advisories`），或直接联系维护者。
-**守卫绕过、任何可能导致值泄露的问题，请不要开公开 issue。**
+Use a GitHub private security advisory (`Security` → `Advisories`), or contact the maintainer directly.
+**Please do not open a public issue for a guard bypass or anything that could leak a value.**
 
-## 范围与威胁模型
+## Scope and threat model
 
-这个插件把私密字节挪出模型的视野；它**不是**操作系统沙箱。
+This plugin moves private bytes out of the model's view; it is **not** an OS sandbox.
 
-**在范围内：**
+**In scope:**
 
-- 值通过插件控制的任何路径进入模型上下文、工具结果或 `state.json`；
-- 点名私密目录的工具调用没有被守卫拒绝；
-- 分类器收到掩码文本之外的任何东西；
-- 宿主机命令打印了值或骨架。
+- a value reaching the model context, a tool result, or `state.json` through any path the plugin controls;
+- a tool call whose path or command arguments address the private directory, not being refused;
+- the classifier receiving anything other than masked text;
+- a host command printing a value or a skeleton;
+- a credential-shaped string slipping past exit redaction into the transcript (this layer is new in
+  4.5.0; missed patterns are still worth reporting).
 
-**不在范围内（属于已记录的限制，不算漏洞）：**
+**Out of scope (documented limits, not vulnerabilities):**
 
-- 同一用户下的其他进程读取文件；
-- 用户或 agent 自己写的脚本主动读取并打印值；
-- 密钥被用去配置别的东西之后，那份配置里的明文副本。
+- another process under the same user reading the files;
+- a script written by the user or the agent deliberately reading and printing a value;
+- the plaintext copy left behind in whatever configuration the secret was used to set up.
 
-## 运维加固清单
+## Operational hardening checklist
 
-- 把 `$DSH_HOME/secret-vault` 排除在备份和同步目录之外；
-- 宿主机命令用与 DSH 相同的用户运行，不要经由不可信通道；
-- 把 `secret-vault purge <session> --yes` 当作不可恢复操作。
+- Exclude `$DSH_HOME/secret-vault` from backups and synchronised directories.
+- Run host commands as the same user as DSH, never through an untrusted channel.
+- Treat `secret-vault purge <session> --yes` as irreversible.

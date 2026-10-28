@@ -5,16 +5,25 @@
  * ask_user_question — private bytes never reach the model, so a question cannot carry them.
  * v4.2.0: the lock drops by itself once the last file is gone, and a broken store only
  * refuses store-touching calls instead of freezing tooling for every session.
+ * v4.5.0: three changes driven by a real session that could not work for 5 rounds —
+ * the guard now only refuses calls whose path/command arguments address the vault,
+ * write_secret moves a value vault -> config file without the transcript seeing it, and
+ * every tool result passes an exit redactor so a stray `sed`/`grep` cannot print a key.
  */
 import { openStore, storeDir } from './store.js'
 import { createTools } from './tools.js'
 import { registerRoutes } from './routes.js'
 import { registerGuard, createScopedFallbackGuard } from './guard.js'
 import { startDailyCleanup } from './daily-cleanup.js'
+import { registerExitRedaction } from './exit-redact.js'
 
 export const inject = ['tools', 'agents', 'connection']
 
 export async function apply(ctx) {
+  // One process-wide exit policy: any tool result, not just this plugin's, leaves with
+  // credential-shaped strings masked. Registered before the store opens so a broken vault
+  // cannot disable it.
+  registerExitRedaction(ctx)
   let store
   try { store = await openStore() }
   catch {

@@ -1,6 +1,6 @@
 {
   "name": "dsh-secret-vault",
-  "version": "4.4.1",
+  "version": "4.5.0",
   "scripts": {
     "test": "node --test tests/local-*.test.mjs",
     "test:unit": "node --test tests/local-*.test.mjs"
@@ -26,6 +26,9 @@
     "guard.js",
     "tools.js",
     "routes.js",
+    "redact.js",
+    "secret-write.js",
+    "exit-redact.js",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",

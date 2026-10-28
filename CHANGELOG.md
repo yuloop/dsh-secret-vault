@@ -2,6 +2,31 @@
 
 # 更新记录
 
+## 4.5.0
+
+三个问题都来自一次真实会话（插件被用了一上午，卡住两次）：
+
+- **守卫收窄**：以前只要有**任何**参数里出现私密目录字符串就拒绝整个调用，连 `compress` 摘要、
+  给别的 agent 的报告、只把目录写成变量名的脚本都被拦。现在只拦「参数是路径/命令且指向私密目录」
+  的调用（`file_path` / `command` / `cwd` / `paths` … 或值本身是绝对路径）。
+  `date`、`ls /var/tmp`、`php -l` 这类无关命令照常。
+- **顺手修掉一个更严重的**：调用方没有 session id 时（`exec.agent` 缺失），旧代码
+  `!owner && store.hasFiles()` 会拒绝**所有**工具 —— 一个拿不到会话身份的子代理或宿主内部调用，
+  会让整机会话的工具全挂。现在只在触碰私密目录时拒绝。
+- **新原语 `write_secret`**（最关键）：`private_local_process({operation:"write_secret",
+  reference, target, key_path, mode})` 把保险库里的值直接写进目标配置文件的指定键。
+  支持 `.env`/`.ini`/`.properties`/`.yml`/`.toml`/`.json`（点分路径）/`.php`/`.js`/`.ts`
+  （`define('K',…)` 或 `'K' => …`）；文件不存在时按目标格式生成初始内容。
+  返回只有 `{ok, status, target, keyPath, changed, fingerprint(8 位)}` —— **正文永不返回**。
+  只改匹配到的那一处值，其余字节原样保留；保留原文件权限位。
+- **`private_local_status` 一次调用给出稳定状态**：`mode: local_only | normal`、
+  `restricts`（现在只限什么）、`openTools`（什么还能用）、`releaseWhen`（怎么解除）。
+- **出口打码**：任何工具的返回在进入上下文前，命中 `sk-`/`AKIA`/`ghp_`/JWT/`Bearer`
+  等高熵凭据样式一律替换成「前 4 字符 + 指纹」。挡的是 agent 自己 `sed`/`grep` 手滑
+  （真实事故：一条没遮干净的 `sed` 把 DashScope key 打进会话记录）。按 token 线性扫描，
+  1 MB 日志 ~114 ms；不误伤路径、git sha、UUID、`tmp-` 句柄。
+- 守卫的拒绝信息改成给出路（要写配置就调 `write_secret`），不再只说「暂停」。
+
 ## 4.4.1
 
 - 修 5 条 PII 误报：拉丁标签词（`code` / `name`）缺词边界，`postcode` / `decode` / `username` /

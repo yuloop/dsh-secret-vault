@@ -6,6 +6,8 @@ import { randomBytes } from 'node:crypto'
 
 export const MAX_BYTES = 128 * 1024
 export const MAX_STATE_BYTES = 1024 * 1024
+// A target config file we are allowed to rewrite; larger is a mistake, not a config.
+export const MAX_TARGET_BYTES = 1024 * 1024
 export const newId = () => `tmp-${randomBytes(16).toString('hex')}`
 export const ID = /^tmp-[a-f0-9]{32}$/
 export const OWNER = /^[a-zA-Z0-9_-]{1,128}$/
@@ -41,6 +43,23 @@ export async function exclusiveWrite(path, text) {
   const fd = await open(path, 'wx', 0o600)
   try { await fd.writeFile(text, 'utf8'); await fd.sync() }
   finally { await fd.close() }
+}
+
+/**
+ * Replace a target file's bytes via a sibling temp file. Mode is preserved from the existing
+ * file (0o600 for a new one): an API key must not become world-readable because we rewrote it.
+ */
+export async function atomicReplace(path, text) {
+  if (typeof text !== 'string') fail()
+  const dir = path.slice(0, path.lastIndexOf('/')) || '.'
+  const temp = join(dir, `.private-write-${randomBytes(12).toString('hex')}`)
+  let mode = 0o600
+  try { mode = (await lstat(path)).mode & 0o777 } catch (error) { if (error.code !== 'ENOENT') fail() }
+  const fd = await open(temp, 'wx', mode)
+  try { await fd.writeFile(text, 'utf8'); await fd.sync() }
+  finally { await fd.close() }
+  try { await rename(temp, path) }
+  catch (error) { await unlink(temp).catch(() => {}); throw error }
 }
 
 export async function atomicState(dir, state) {
